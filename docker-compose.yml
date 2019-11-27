@@ -1,0 +1,29 @@
+version: '3.5'
+services:
+  grafana:
+    image: grafana/grafana:6.3.3
+    ports:
+      - 3000:3000
+    container_name: grafana
+    volumes:
+      - influx-grafana-logdata:/var/log/grafana
+      - ./grafana/config/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - 8086:8086
+    container_name: influxdb
+    volumes:
+      - influx-storage:/var/lib/influxdb
+  kapacitor:
+    image: kapacitor:latest
+    container_name: kapacitor
+    volumes:
+      - kapacitor-storage:/var/lib/kapacitor
+      - ./kapacitor/kapacitor.conf:/etc/kapacitor/kapacitor.conf:ro
+      - ./kapacitor/tasks:/etc/kapacitor/tasks:ro
+volumes:
+  influx-storage:
+  kapacitor-storage:
+  influx-grafana-logdata:

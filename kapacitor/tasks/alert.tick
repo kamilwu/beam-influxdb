@@ -1,0 +1,12 @@
+dbrp "beam_metrics"."autogen"
+
+stream
+    |from()
+        .measurement('')
+    |groupBy()
+        .byMeasurement()
+    |where(lambda: strContains("metric", 'runtime'))
+    |alert()
+        .message('{{ .ID }} is {{ .Level}} value: {{ index .Fields "value" }}')
+        .crit(lambda: sigma(float("value")) > 3.0)
+        .log('/tmp/alerts.log')
