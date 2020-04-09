@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: influx
+  name: influx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: influx
+  template:
+    metadata:
+      labels:
+        app: influx
+    spec:
+      containers:
+      - image: influxdb:latest
+        name: influxdb
+        ports:
+        - containerPort: 8086
+        volumeMounts:
+          - mountPath: /var/lib/influxdb
+            name: influxdb-storage
+          - mountPath: /etc/influxdb
+            name: influxdb-config
+            readOnly: true
+      - image: kapacitor:latest
+        name: kapacitor
+        ports:
+          - containerPort: 9092
+        volumeMounts:
+          - mountPath: /var/lib/kapacitor
+            name: kapacitor-storage
+          - mountPath: /etc/kapacitor
+            name: kapacitor-config
+            readOnly: true
+          - mountPath: /etc/kapacitor/tasks
+            name: kapacitor-tasks
+            readOnly: true
+      restartPolicy: Always
+      volumes:
+        - name: influxdb-storage
+          persistentVolumeClaim:
+            claimName: influxdb-storage
+        - name: influxdb-config
+          configMap:
+            name: influxdb-storage
+        - name: kapacitor-storage
+          persistentVolumeClaim:
+            claimName: kapacitor-storage
+        - name: kapacitor-config
+          configMap:
+            name: kapacitor-config
+        - name: kapacitor-tasks
+          configMap:
+            name: kapacitor-tasks
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb
+  labels:
+    app: influx
+spec:
+  type: NodePort
+  ports:
+  - port: 8086
+    targetPort: 8086
+    nodePort: 30000
+  selector:
+    app: influx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kapacitor
+  labels:
+    app:  influx
+spec:
+  ports:
+  - port: 9092
+    targetPort: 9092
+  selector:
+    app: influx
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kapacitor-storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: influxdb-storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
